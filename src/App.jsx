@@ -112,6 +112,21 @@ function applyCurrency(val, symbol) {
   return `${symbol}${s}`;
 }
 
+// Applies decimal places to a numeric string, preserving accounting-style
+// parentheses for negatives and an optional suffix (e.g. '%').
+// Leaves n.a. / em-dash / non-numeric values untouched.
+function applyDecimals(val, decimals, suffix = '') {
+  const s = String(val ?? '').trim();
+  if (!s || ['n.a.', '-', '—', ''].includes(s)) return s;
+  const isAccounting = s.startsWith('(') && s.endsWith(')');
+  const inner   = isAccounting ? s.slice(1, -1) : s;
+  const stripped = inner.replace(/%$/, '').replace(/,/g, '').trim();
+  const n = parseFloat(stripped);
+  if (isNaN(n)) return s;
+  const abs = Math.abs(n).toFixed(decimals);
+  return isAccounting ? `(${abs}${suffix})` : `${abs}${suffix}`;
+}
+
 // Returns 'neg' | 'pos' | 'zero' | 'na' for numeric/percent cell values.
 // Handles plain numbers, %, $, and accounting-style (25%) negatives.
 function parseSign(val) {
@@ -464,18 +479,32 @@ export default function App() {
                     const fns    = cellFn[`${name}||${row.__rowKey}`] ?? [];
                     const val    = row[colId] != null ? String(row[colId]) : '';
                     const fmt    = formatMap[name];
-                    const fmtParam      = fmt?.includes(':') ? fmt.split(':')[1] : null;
-                    const fmtBase       = fmt?.includes(':') ? fmt.split(':')[0] : fmt;
-                    const isCurrency    = fmtBase === 'currency';
+                    // Parse format string: base[:param1[:param2]]
+                    // percent/number: param1 = decimal places (optional), param2 = 'nocolor' (optional)
+                    // currency:      param1 = symbol, param2 = 'nocolor' (optional)
+                    const fmtParts   = fmt?.split(':') ?? [];
+                    const fmtBase    = fmtParts[0] ?? null;
+                    const fmtParam1  = fmtParts[1] ?? null;
+                    const fmtParam2  = fmtParts[2] ?? null;
+                    const isCurrency = fmtBase === 'currency';
+                    const noColor    = fmtParam1 === 'nocolor' || fmtParam2 === 'nocolor';
+                    const decimals   = (fmtBase === 'percent' || fmtBase === 'number') &&
+                                       fmtParam1 != null && fmtParam1 !== 'nocolor' &&
+                                       !isNaN(Number(fmtParam1))
+                                       ? Number(fmtParam1) : null;
                     const align  = alignMap[name] ?? (ci === 0 ? 'left' : 'right');
                     const valign = valignMap[name] ?? 'top';
                     const isNumeric   = fmtBase === 'percent' || fmtBase === 'number' || isCurrency;
                     const isMultiline = fmtBase === 'multiline';
-                    const sign        = isNumeric ? parseSign(val) : null;
+                    const sign        = isNumeric && !noColor ? parseSign(val) : null;
                     const cellKey     = `${row.__rowKey}|${colId}`;
                     const isOpen      = expanded.has(cellKey);
                     const truncatable = isMultiline && val.length > 120;
-                    const formattedVal = isCurrency && fmtParam ? applyCurrency(val, fmtParam) : val;
+                    const formattedVal = isCurrency && fmtParam1 && fmtParam1 !== 'nocolor'
+                      ? applyCurrency(val, fmtParam1)
+                      : decimals != null
+                      ? applyDecimals(val, decimals, fmtBase === 'percent' ? '%' : '')
+                      : val;
                     const displayVal   = truncatable && !isOpen ? formattedVal.slice(0, 120) + '…' : formattedVal;
 
                     const td = {

@@ -67,7 +67,7 @@ VALUES
   ('Ebitda Ic Exit',        NULL, NULL, NULL, NULL,   62, 'right',  'top',    NULL,        NULL,   NULL,   NULL),
   ('Gross Irr',             NULL, NULL, NULL, NULL,   62, 'right',  'top',    NULL,        NULL,   NULL,   NULL),
   ('Current Assessment',    NULL, NULL, NULL, NULL,   60, 'center', 'middle', 'rag',       NULL,   NULL,   NULL),
-  ('Qtd vs Budget',         NULL, NULL, NULL, NULL,   70, 'right',  'top',    'percent',   NULL,   NULL,   NULL),
-  ('Ytd vs Budget',         NULL, NULL, NULL, NULL,   70, 'right',  'top',    'percent',   NULL,   NULL,   NULL),
+  ('Qtd vs Budget',         NULL, NULL, NULL, NULL,   70, 'right',  'top',    'percent:1',         NULL,   NULL,   NULL),
+  ('Ytd vs Budget',         NULL, NULL, NULL, NULL,   70, 'right',  'top',    'percent:1:nocolor', NULL,   NULL,   NULL),
   ('Annual vs Budget',      NULL, NULL, NULL, NULL,   70, 'right',  'top',    'percent',   NULL,   NULL,   NULL),
   ('Commentary',            NULL, NULL, NULL, NULL,  260, 'left',   'top',    'multiline', NULL,   NULL,   '#4a4a6a');

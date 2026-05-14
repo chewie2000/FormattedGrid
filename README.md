@@ -133,12 +133,30 @@ The `FORMAT` column activates special rendering for all cells in a column.
 | Value | Behaviour |
 |-------|-----------|
 | `percent` | Colours the cell value: negatives (including accounting-style `(25%)`) in red, positives in green, zero in default, `n.a.` / `-` in muted grey |
-| `number` | Same neg/pos colouring as `percent` |
-| `currency:<symbol>` | Prepends a currency symbol and applies neg/pos colouring. Plain integers and decimals are comma-formatted automatically. Use any symbol: `currency:$`, `currency:€`, `currency:£`, `currency:¥` |
+| `percent:<dp>` | Same as `percent`, reformatting the value to `dp` decimal places. Example: `percent:2` renders `18.2` as `18.20%` |
+| `percent:<dp>:nocolor` | Same decimal formatting with neg/pos colouring turned off |
+| `percent::nocolor` | Default formatting, colouring turned off (no decimal override) |
+| `number` | Same neg/pos colouring as `percent`, no suffix |
+| `number:<dp>` | Number with `dp` decimal places and neg/pos colouring |
+| `number:<dp>:nocolor` | Number with `dp` decimal places, no colouring |
+| `currency:<symbol>` | Prepends a currency symbol and applies neg/pos colouring. Plain integers and decimals are comma-formatted automatically. Examples: `currency:$`, `currency:€`, `currency:£`, `currency:¥` |
+| `currency:<symbol>:nocolor` | Currency symbol prefix, colouring turned off |
 | `rag` | Replaces the cell text with a coloured dot inferred from the value — see [RAG colour mapping](#rag-colour-mapping) |
 | `multiline` | Wraps cell text instead of truncating. Values longer than 120 characters get an inline *more / less* toggle |
 
-Format values that take a parameter use a colon separator: `currency:$`. The same `type:param` convention is used for any future format types that require configuration.
+Format values use a colon-separated `type:param1:param2` structure. Parameters are positional and all optional — omit trailing params to use defaults.
+
+**Examples:**
+```sql
+'percent'           -- colour on, no decimal override
+'percent:2'         -- 2 decimal places, colour on
+'percent:2:nocolor' -- 2 decimal places, colour off
+'percent::nocolor'  -- default decimals, colour off
+'number:1'          -- 1 decimal place, colour on
+'number:0:nocolor'  -- 0 decimal places, colour off
+'currency:$'        -- $ prefix, colour on
+'currency:€:nocolor'-- € prefix, colour off
+```
 
 #### RAG colour mapping
 
