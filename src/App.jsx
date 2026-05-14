@@ -100,6 +100,18 @@ function defaultWidth(name) {
   return Math.max(60, Math.min(180, (name?.length ?? 8) * 9));
 }
 
+// Prepends a currency symbol to a value string, adding comma-formatting for
+// plain integers/decimals. Leaves n.a. / em-dash / empty values untouched.
+function applyCurrency(val, symbol) {
+  const s = String(val ?? '').trim();
+  if (!s || ['n.a.', '-', '—', ''].includes(s)) return s;
+  if (/^-?\d+(\.\d+)?$/.test(s)) {
+    const n = parseFloat(s);
+    return `${symbol}${Math.abs(n).toLocaleString()}`;
+  }
+  return `${symbol}${s}`;
+}
+
 // Returns 'neg' | 'pos' | 'zero' | 'na' for numeric/percent cell values.
 // Handles plain numbers, %, $, and accounting-style (25%) negatives.
 function parseSign(val) {
@@ -452,20 +464,24 @@ export default function App() {
                     const fns    = cellFn[`${name}||${row.__rowKey}`] ?? [];
                     const val    = row[colId] != null ? String(row[colId]) : '';
                     const fmt    = formatMap[name];
+                    const fmtParam      = fmt?.includes(':') ? fmt.split(':')[1] : null;
+                    const fmtBase       = fmt?.includes(':') ? fmt.split(':')[0] : fmt;
+                    const isCurrency    = fmtBase === 'currency';
                     const align  = alignMap[name] ?? (ci === 0 ? 'left' : 'right');
                     const valign = valignMap[name] ?? 'top';
-                    const isNumeric   = fmt === 'percent' || fmt === 'number';
-                    const isMultiline = fmt === 'multiline';
+                    const isNumeric   = fmtBase === 'percent' || fmtBase === 'number' || isCurrency;
+                    const isMultiline = fmtBase === 'multiline';
                     const sign        = isNumeric ? parseSign(val) : null;
                     const cellKey     = `${row.__rowKey}|${colId}`;
                     const isOpen      = expanded.has(cellKey);
                     const truncatable = isMultiline && val.length > 120;
-                    const displayVal  = truncatable && !isOpen ? val.slice(0, 120) + '…' : val;
+                    const formattedVal = isCurrency && fmtParam ? applyCurrency(val, fmtParam) : val;
+                    const displayVal   = truncatable && !isOpen ? formattedVal.slice(0, 120) + '…' : formattedVal;
 
                     const td = {
                       ...S.td,
                       ...(isAlt && dynAltRows ? { background: dynAltColor } : {}),
-                      textAlign:     fmt === 'rag' ? 'center' : align,
+                      textAlign:     fmtBase === 'rag' ? 'center' : align,
                       verticalAlign: valign,
                       ...(isMultiline ? S.tdMulti : {}),
                       fontSize: dynBodySize,
@@ -475,8 +491,8 @@ export default function App() {
                       ...(sign ? SIGN_STYLE[sign] : {}),
                     };
                     return (
-                      <td key={colId} style={td} title={fmt !== 'rag' && !isMultiline ? val : undefined}>
-                        {fmt === 'rag' ? (
+                      <td key={colId} style={td} title={fmtBase !== 'rag' && !isMultiline ? val : undefined}>
+                        {fmtBase === 'rag' ? (
                           <RagDot value={val} />
                         ) : (
                           <>

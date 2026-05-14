@@ -205,9 +205,10 @@ const MOCK = {
         'left',    // Commentary
       ],
       [F.format]: [
-        null, null, null, null,
-        'percent',   // 2025 QTD vs Budget (%)
-        'percent',   // 2025 YTD vs Budget (%)
+        'currency:$', // Fund Equity Invested (USD)
+        null, null, null,
+        'percent',    // 2025 QTD vs Budget (%)
+        'percent',    // 2025 YTD vs Budget (%)
         null, null, null, null, null, null, null,
         'rag',        // Current Assessment
         'multiline',  // Commentary

@@ -59,7 +59,7 @@ VALUES
   ('Company',               NULL, NULL, NULL, NULL,  160, 'left',   'top',    NULL,        NULL,   NULL,   NULL),
   ('Region',                NULL, NULL, NULL, NULL,   65, 'left',   'top',    NULL,        'true', NULL,   NULL),
   ('Date of Investment',    NULL, NULL, NULL, NULL,   55, 'center', 'top',    NULL,        NULL,   'true', NULL),
-  ('Fund Equity Invested',  NULL, NULL, NULL, NULL,   80, 'right',  'top',    NULL,        NULL,   NULL,   NULL),
+  ('Fund Equity Invested',  NULL, NULL, NULL, NULL,   80, 'right',  'top',    'currency:$', NULL,   NULL,   NULL),
   ('Fund Control',          NULL, NULL, NULL, NULL,   55, 'center', 'top',    NULL,        NULL,   NULL,   NULL),
   ('Current Mark',          NULL, NULL, NULL, NULL,   70, 'right',  'top',    NULL,        NULL,   NULL,   NULL),
   ('Ebitda Ic Entry',       NULL, NULL, NULL, NULL,   62, 'right',  'top',    NULL,        NULL,   NULL,   NULL),

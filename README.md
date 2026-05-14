@@ -121,8 +121,11 @@ The `FORMAT` column activates special rendering for a column's cells.
 |-------|-----------|
 | `percent` | Colours the cell value: negative values (including accounting-style `(25%)`) in red, positive in green, zero in default, `n.a.` / `-` in muted grey |
 | `number` | Same colouring as `percent` |
+| `currency:<symbol>` | Prepends a currency symbol and applies neg/pos colouring. Plain integers are comma-formatted. Examples: `currency:$`, `currency:€`, `currency:£` |
 | `rag` | Replaces the cell text with a coloured dot. Colour is inferred from the cell value — see [RAG colour mapping](#rag-colour-mapping) below |
 | `multiline` | Wraps cell text. Long values (> 120 characters) are truncated with a *more / less* toggle |
+
+Format values support an optional parameter separated by a colon — `currency:$` uses `$` as the symbol. The same `type:param` pattern is available for future format types.
 
 #### RAG colour mapping
 
