@@ -1,6 +1,8 @@
 # FormattedGrid
 
-A [Sigma Computing](https://www.sigmacomputing.com/) custom plugin that renders a richly formatted data table driven entirely by Snowflake data. Column widths, alignment, number formats, footnotes, RAG indicators, currency symbols, and typography are all controlled through a companion configuration table — no code changes required to adjust the layout.
+A [Sigma Computing](https://www.sigmacomputing.com/) custom plugin that renders a richly formatted data table. Column widths, alignment, number formats, footnotes, RAG indicators, currency symbols, and typography are all controlled through a companion configuration table — no code changes required to adjust the layout.
+
+The plugin works with any data source connected to Sigma (Snowflake, BigQuery, Redshift, Databricks, PostgreSQL, and others). It reads from Sigma elements and is entirely agnostic about what is behind them.
 
 ---
 
@@ -9,13 +11,13 @@ A [Sigma Computing](https://www.sigmacomputing.com/) custom plugin that renders 
 - **Dynamic columns** — columns shown and their order are set in the editor panel; no hardcoding required
 - **Group separator rows** — designate a group-key column to insert labelled section headers whenever the value changes
 - **Display name overrides** — rename column headers for display without touching the Sigma element
-- **Column formatting** — widths, horizontal and vertical alignment, all driven from GRID_CONFIG
+- **Column formatting** — widths, horizontal and vertical alignment, all driven from the config element
 - **Cell formats**
   - `percent` / `number` — neg/pos colouring (red, green) with muted `n.a.` handling
   - `currency:$` — currency symbol prefix with comma-formatting and neg/pos colouring
   - `rag` — coloured dot (green / amber / red / grey) inferred from the cell value
   - `multiline` — wraps long text with an inline expand / collapse toggle
-- **Typography** — bold, italic, and text colour per column, set from GRID_CONFIG
+- **Typography** — bold, italic, and text colour per column, set from the config element
 - **Footnotes** — superscript markers on column headers or individual cells; linked footnote block at the bottom with two-way click navigation
 - **Drag-to-resize** — column widths can be overridden by dragging the header edge; persisted in `localStorage`
 - **Editor panel controls** — font family, body font size, header colours, alternating row colour, group header style — all configurable without a code deploy
@@ -30,7 +32,7 @@ FormattedGrid reads from two Sigma elements connected in the plugin editor panel
 Your main data. Each row becomes a table row. The columns you select in the *Columns* field determine which columns appear and in what order.
 
 **Source 2 — Footnote Config**
-A metadata table (typically `GRID_CONFIG` in Snowflake) that drives all formatting. Each row is a *rule* targeting a column by name. Rules can set widths, alignment, formats, typography, footnote markers, and display name overrides. Multiple rules can target the same column — for example, one row for the footnote and another for width and format.
+A metadata element whose rows drive all formatting. Each row is a *rule* targeting a column by name. Rules can set widths, alignment, formats, typography, footnote markers, and display name overrides. Multiple rules can target the same column — for example, one row for the footnote and another for width and format.
 
 At render time the plugin:
 1. Reads the column list from Source 1 and builds the table header
@@ -45,39 +47,38 @@ Column widths can also be overridden interactively by dragging the header edge �
 
 ## Quick start
 
-### 1. Create the Snowflake tables
+### 1. Create your tables
 
-Run [`sql/01_create_tables.sql`](sql/01_create_tables.sql) after replacing `<DATABASE>` and `<SCHEMA>`:
+You need two tables (or views) in your data source:
 
-```sql
-USE DATABASE <DATABASE>;
-USE SCHEMA <SCHEMA>;
--- creates GRID_DATA and GRID_CONFIG
-```
+- **A data table** — one row per record, any columns you want displayed
+- **A config table** — one row per formatting rule; see the [config table schema](#config-table-schema) below
 
-### 2. Load your data
+SQL scripts for Snowflake are provided as a reference:
+- [`sql/01_create_tables.sql`](sql/01_create_tables.sql) — DDL for both tables
+- [`sql/02_sample_data.sql`](sql/02_sample_data.sql) — worked example covering all column types and formatting options
 
-Populate `GRID_DATA` with your table rows. See [`sql/02_sample_data.sql`](sql/02_sample_data.sql) for a worked example covering all column types and formatting options.
+The same structure works on any data source Sigma supports — adapt the DDL syntax as needed.
 
-### 3. Configure formatting in GRID_CONFIG
-
-Add rows to `GRID_CONFIG` to set widths, formats, footnotes, and styles. See the [GRID_CONFIG reference](#grid_config-reference) below.
-
-### 4. Connect the plugin in Sigma
+### 2. Connect the plugin in Sigma
 
 1. Add the plugin to your workbook and open the editor panel
-2. Connect a Sigma element to **Table Data**
-3. Connect your `GRID_CONFIG` element to **Footnote Config**
+2. Connect a Sigma element (table, pivot, or query result) to **Table Data**
+3. Connect your config element to **Footnote Config**
 4. Use the **Columns** multi-select to add the columns you want displayed, in order
 5. Optionally set a **Group key column** to enable group separator rows
 
-> **Column name matching**: `COLUMN_NAME` in `GRID_CONFIG` must match the display name of the column exactly as it appears in your Sigma element. Sigma title-cases Snowflake snake_case names by default — for example `FUND_EQUITY_INVESTED` becomes `Fund Equity Invested`. If you rename a column inside Sigma, update `COLUMN_NAME` to match.
+### 3. Configure formatting
+
+Add rows to your config table to set widths, formats, footnotes, and styles. See the [GRID_CONFIG reference](#grid_config-reference) below.
+
+> **Column name matching**: `COLUMN_NAME` in the config table must match the display name of the column exactly as it appears in your Sigma element. Sigma title-cases snake_case column names by default — for example `FUND_EQUITY_INVESTED` becomes `Fund Equity Invested`. If you rename a column inside Sigma, update `COLUMN_NAME` to match.
 
 ---
 
-## GRID_CONFIG reference
+## Config table schema
 
-Each row in `GRID_CONFIG` is a formatting rule. All columns except `COLUMN_NAME` are optional — `NULL` means use the plugin default. Multiple rules can target the same column and are merged at render time.
+Each row is a formatting rule. All columns except `COLUMN_NAME` are optional — `NULL` means use the plugin default. Multiple rules can target the same column and are merged at render time.
 
 ### Targeting
 
@@ -201,7 +202,7 @@ These controls are in the plugin editor panel in Sigma and apply globally to the
 | Setting | Description | Default |
 |---------|-------------|---------|
 | **Table Data** | Connect the Sigma element containing your data rows | — |
-| **Footnote Config** | Connect the Sigma element containing your `GRID_CONFIG` rows | — |
+| **Footnote Config** | Connect the Sigma element containing your config rows | — |
 | **Columns** | Multi-select of columns to display. Column order in the table matches selection order | — |
 | **Group key column** | Column whose value drives group separator rows. A labelled header row is inserted each time the value changes | — |
 | **Font family** | Font applied to the whole table | `Inter` |
@@ -275,7 +276,7 @@ FormattedGrid/
 │       ├── data.js          # Sample data for local dev
 │       └── plugin.jsx       # Sigma SDK stub for local dev
 ├── sql/
-│   ├── 01_create_tables.sql # Snowflake DDL
+│   ├── 01_create_tables.sql # DDL (Snowflake syntax, adapt as needed)
 │   └── 02_sample_data.sql   # Sample data (portfolio example)
 ├── index.html               # Sigma entry HTML
 ├── mock.html                # Mock dev entry HTML
