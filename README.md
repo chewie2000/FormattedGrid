@@ -1,27 +1,45 @@
 # FormattedGrid
 
-A [Sigma Computing](https://www.sigmacomputing.com/) custom plugin that renders a richly formatted data table driven entirely by Snowflake data. Column widths, alignment, number formats, footnotes, RAG indicators, and typography are all controlled through a companion configuration table — no code changes required to adjust the layout.
+A [Sigma Computing](https://www.sigmacomputing.com/) custom plugin that renders a richly formatted data table driven entirely by Snowflake data. Column widths, alignment, number formats, footnotes, RAG indicators, currency symbols, and typography are all controlled through a companion configuration table — no code changes required to adjust the layout.
+
+---
+
+## Features
+
+- **Dynamic columns** — columns shown and their order are set in the editor panel; no hardcoding required
+- **Group separator rows** — designate a group-key column to insert labelled section headers whenever the value changes
+- **Display name overrides** — rename column headers for display without touching the Sigma element
+- **Column formatting** — widths, horizontal and vertical alignment, all driven from GRID_CONFIG
+- **Cell formats**
+  - `percent` / `number` — neg/pos colouring (red, green) with muted `n.a.` handling
+  - `currency:$` — currency symbol prefix with comma-formatting and neg/pos colouring
+  - `rag` — coloured dot (green / amber / red / grey) inferred from the cell value
+  - `multiline` — wraps long text with an inline expand / collapse toggle
+- **Typography** — bold, italic, and text colour per column, set from GRID_CONFIG
+- **Footnotes** — superscript markers on column headers or individual cells; linked footnote block at the bottom with two-way click navigation
+- **Drag-to-resize** — column widths can be overridden by dragging the header edge; persisted in `localStorage`
+- **Editor panel controls** — font family, body font size, header colours, alternating row colour, group header style — all configurable without a code deploy
 
 ---
 
 ## How it works
 
-FormattedGrid reads from two Sigma elements that you connect in the plugin editor panel:
+FormattedGrid reads from two Sigma elements connected in the plugin editor panel:
 
 **Source 1 — Table Data**
-Your main data. Each row in the connected element becomes a row in the table. The columns you select in the editor panel's *Columns* field determine which columns are shown and in what order.
+Your main data. Each row becomes a table row. The columns you select in the *Columns* field determine which columns appear and in what order.
 
 **Source 2 — Footnote Config**
-A metadata table (typically `GRID_CONFIG` in Snowflake) that drives all formatting. Each row in this table is a *rule* that targets a column by name. Rules can set column widths, text alignment, number formats, typography, footnote markers, and display name overrides. Multiple rules can target the same column — one row for the footnote, another for width and alignment, and so on.
+A metadata table (typically `GRID_CONFIG` in Snowflake) that drives all formatting. Each row is a *rule* targeting a column by name. Rules can set widths, alignment, formats, typography, footnote markers, and display name overrides. Multiple rules can target the same column — for example, one row for the footnote and another for width and format.
 
 At render time the plugin:
 1. Reads the column list from Source 1 and builds the table header
-2. Looks up each column's display name, width, alignment and format from Source 2
+2. Looks up each column's display name, width, alignment, and format from Source 2
 3. Applies footnote markers to headers and cells where rules match
-4. Renders a footnote block at the bottom, with click-through navigation back to the first occurrence of each marker
-5. Applies group separator rows wherever the *Group key column* value changes between rows
+4. Renders a footnote block at the bottom with click-through navigation back to the first marker occurrence
+5. Inserts group separator rows wherever the *Group key column* value changes between rows
 
-Column widths can also be overridden interactively by dragging the header edge — these overrides are saved in the browser's `localStorage` and persist across page loads.
+Column widths can also be overridden interactively by dragging the header edge — these are saved in `localStorage` and persist across page loads.
 
 ---
 
@@ -39,7 +57,7 @@ USE SCHEMA <SCHEMA>;
 
 ### 2. Load your data
 
-Populate `GRID_DATA` with your table rows. See [`sql/02_sample_data.sql`](sql/02_sample_data.sql) for a worked example showing the expected shape for all column types.
+Populate `GRID_DATA` with your table rows. See [`sql/02_sample_data.sql`](sql/02_sample_data.sql) for a worked example covering all column types and formatting options.
 
 ### 3. Configure formatting in GRID_CONFIG
 
@@ -53,13 +71,13 @@ Add rows to `GRID_CONFIG` to set widths, formats, footnotes, and styles. See the
 4. Use the **Columns** multi-select to add the columns you want displayed, in order
 5. Optionally set a **Group key column** to enable group separator rows
 
-> **Column name matching**: `COLUMN_NAME` in `GRID_CONFIG` must match the display name of the column exactly as it appears in your Sigma element. Sigma title-cases Snowflake snake_case column names by default — for example `FUND_EQUITY_INVESTED` becomes `Fund Equity Invested`. If you rename a column inside Sigma, update `COLUMN_NAME` to match the new name.
+> **Column name matching**: `COLUMN_NAME` in `GRID_CONFIG` must match the display name of the column exactly as it appears in your Sigma element. Sigma title-cases Snowflake snake_case names by default — for example `FUND_EQUITY_INVESTED` becomes `Fund Equity Invested`. If you rename a column inside Sigma, update `COLUMN_NAME` to match.
 
 ---
 
 ## GRID_CONFIG reference
 
-Each row in `GRID_CONFIG` is a formatting rule. All columns except `COLUMN_NAME` are optional — `NULL` means use the plugin default.
+Each row in `GRID_CONFIG` is a formatting rule. All columns except `COLUMN_NAME` are optional — `NULL` means use the plugin default. Multiple rules can target the same column and are merged at render time.
 
 ### Targeting
 
@@ -70,23 +88,23 @@ Each row in `GRID_CONFIG` is a formatting rule. All columns except `COLUMN_NAME`
 
 ### Footnotes
 
-Footnotes appear as superscript markers on the header or cell, with the full text collected into a footnote block at the bottom of the table. Clicking a marker scrolls to its definition; clicking a definition scrolls back to the first occurrence.
+Footnotes appear as superscript markers on headers or cells. All markers are collected into a footnote block at the bottom of the table. Clicking a marker scrolls to its definition; clicking a definition scrolls back to the first occurrence.
 
 | Column | Type | Description |
 |--------|------|-------------|
-| `FOOTNOTE_NUMBER` | `NUMBER` | Integer marker shown as a superscript (e.g. `1`, `2`, `3`). Markers are rendered in ascending order |
-| `FOOTNOTE_TEXT` | `VARCHAR` | Full text of the footnote, shown in the footnote block at the bottom of the table |
+| `FOOTNOTE_NUMBER` | `NUMBER` | Integer marker shown as a superscript (1, 2, 3 …). Markers are deduplicated and rendered in ascending order |
+| `FOOTNOTE_TEXT` | `VARCHAR` | Full text of the footnote shown in the footnote block |
 
 Multiple columns can share the same `FOOTNOTE_NUMBER` — the footnote text is deduplicated automatically.
 
-**Header footnote example** — marker on a column header:
+**Header footnote** — marker on a column header:
 ```sql
-('Fund Equity Invested', NULL, 1, 'All figures reported at cost in USD millions.', ...)
+('Fund Equity Invested', NULL, 1, 'All figures reported at cost in USD millions.', NULL, ...)
 ```
 
-**Cell footnote example** — marker on a specific row's cell:
+**Cell footnote** — marker on a specific row's cell:
 ```sql
-('QTD vs Budget', 'Andean Connect', 3, 'Restated following Q4 2025 audit adjustment.', ...)
+('QTD vs Budget', 'Andean Connect', 3, 'Restated following Q4 2025 audit adjustment.', NULL, ...)
 ```
 
 ### Display name override
@@ -96,9 +114,8 @@ Multiple columns can share the same `FOOTNOTE_NUMBER` — the footnote text is d
 | `DISPLAY_NAME` | `VARCHAR` | Replaces the column header label in the rendered table. The underlying `COLUMN_NAME` still matches the Sigma element's column name |
 
 ```sql
--- Show a friendlier label without renaming the column in Sigma
-('Fund Equity Invested', NULL, NULL, NULL, 'Fund Equity Invested (USD)', ...)
-('Qtd vs Budget',        NULL, NULL, NULL, '2025 QTD vs Budget (%)', ...)
+('Fund Equity Invested', NULL, NULL, NULL, 'Fund Equity Invested (USD)', NULL, ...)
+('Qtd vs Budget',        NULL, NULL, NULL, '2025 QTD vs Budget (%)',     NULL, ...)
 ```
 
 ### Layout
@@ -106,26 +123,22 @@ Multiple columns can share the same `FOOTNOTE_NUMBER` — the footnote text is d
 | Column | Type | Accepted values | Description |
 |--------|------|-----------------|-------------|
 | `WIDTH` | `NUMBER` | Any positive integer | Column width in pixels. If not set, width is estimated from the header text length |
-| `ALIGN` | `VARCHAR` | `left` `center` `right` | Horizontal text alignment for header and cells |
+| `ALIGN` | `VARCHAR` | `left` `center` `right` | Horizontal text alignment for the header and all cells in the column |
 | `VALIGN` | `VARCHAR` | `top` `middle` `bottom` | Vertical alignment for cells |
 
 ### Cell format
 
-The `FORMAT` column activates special rendering for a column's cells.
-
-| Column | Type | Accepted values | Description |
-|--------|------|-----------------|-------------|
-| `FORMAT` | `VARCHAR` | see below | Rendering mode for all cells in this column |
+The `FORMAT` column activates special rendering for all cells in a column.
 
 | Value | Behaviour |
 |-------|-----------|
-| `percent` | Colours the cell value: negative values (including accounting-style `(25%)`) in red, positive in green, zero in default, `n.a.` / `-` in muted grey |
-| `number` | Same colouring as `percent` |
-| `currency:<symbol>` | Prepends a currency symbol and applies neg/pos colouring. Plain integers are comma-formatted. Examples: `currency:$`, `currency:€`, `currency:£` |
-| `rag` | Replaces the cell text with a coloured dot. Colour is inferred from the cell value — see [RAG colour mapping](#rag-colour-mapping) below |
-| `multiline` | Wraps cell text. Long values (> 120 characters) are truncated with a *more / less* toggle |
+| `percent` | Colours the cell value: negatives (including accounting-style `(25%)`) in red, positives in green, zero in default, `n.a.` / `-` in muted grey |
+| `number` | Same neg/pos colouring as `percent` |
+| `currency:<symbol>` | Prepends a currency symbol and applies neg/pos colouring. Plain integers and decimals are comma-formatted automatically. Use any symbol: `currency:$`, `currency:€`, `currency:£`, `currency:¥` |
+| `rag` | Replaces the cell text with a coloured dot inferred from the value — see [RAG colour mapping](#rag-colour-mapping) |
+| `multiline` | Wraps cell text instead of truncating. Values longer than 120 characters get an inline *more / less* toggle |
 
-Format values support an optional parameter separated by a colon — `currency:$` uses `$` as the symbol. The same `type:param` pattern is available for future format types.
+Format values that take a parameter use a colon separator: `currency:$`. The same `type:param` convention is used for any future format types that require configuration.
 
 #### RAG colour mapping
 
@@ -138,32 +151,32 @@ Format values support an optional parameter separated by a colon — `currency:$
 
 ### Typography
 
-Typography rules apply to every cell in the column (not individual cells — use `ROW_KEY` for per-cell targeting).
+Typography rules apply to every cell in the column.
 
 | Column | Type | Accepted values | Description |
 |--------|------|-----------------|-------------|
 | `BOLD` | `VARCHAR` | `true` | Renders cell text in bold |
 | `ITALIC` | `VARCHAR` | `true` | Renders cell text in italic |
-| `TEXT_COLOR` | `VARCHAR` | Any CSS colour (hex, rgb, named) | Overrides the cell text colour, e.g. `#3a70c0`, `rgb(60,112,192)`, `navy` |
+| `TEXT_COLOR` | `VARCHAR` | Any CSS colour | Overrides the cell text colour — hex (`#3a70c0`), rgb (`rgb(60,112,192)`), or named (`navy`) |
 
 ### Combining rules for the same column
 
-Rules for the same column are merged — you do not need to specify every field in a single row. The following is valid and equivalent to writing it all in one row:
+Rules are merged per column, so you can split concerns across rows rather than cramming everything into one:
 
 ```sql
 -- Footnote
-('Fund Equity Invested', NULL, 1, 'All figures reported at cost in USD millions.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL),
+('Fund Equity Invested', NULL, 1, 'All figures reported at cost in USD millions.', NULL, NULL, NULL, NULL, NULL,         NULL, NULL, NULL),
 -- Display name override
-('Fund Equity Invested', NULL, NULL, NULL, 'Fund Equity Invested (USD)', NULL, NULL, NULL, NULL, NULL, NULL, NULL),
--- Width and alignment
-('Fund Equity Invested', NULL, NULL, NULL, NULL, 80, 'right', 'top', NULL, NULL, NULL, NULL),
+('Fund Equity Invested', NULL, NULL, NULL, 'Fund Equity Invested (USD)',            NULL, NULL, NULL, NULL,         NULL, NULL, NULL),
+-- Width, alignment, and format
+('Fund Equity Invested', NULL, NULL, NULL, NULL, 80, 'right', 'top', 'currency:$', NULL, NULL, NULL),
 ```
 
 ---
 
 ## Editor panel settings
 
-These controls are available in the plugin editor panel in Sigma and apply globally to the table.
+These controls are in the plugin editor panel in Sigma and apply globally to the table.
 
 ### Table
 
@@ -172,23 +185,23 @@ These controls are available in the plugin editor panel in Sigma and apply globa
 | **Table Data** | Connect the Sigma element containing your data rows | — |
 | **Footnote Config** | Connect the Sigma element containing your `GRID_CONFIG` rows | — |
 | **Columns** | Multi-select of columns to display. Column order in the table matches selection order | — |
-| **Group key column** | Column whose value drives group separator rows. When the value changes between rows, a labelled section header is inserted | — |
+| **Group key column** | Column whose value drives group separator rows. A labelled header row is inserted each time the value changes | — |
 | **Font family** | Font applied to the whole table | `Inter` |
-| **Body font size** | Font size for all data cells | `11px` |
+| **Body font size** | Font size for all data cells | `11` |
 | **Header background** | Background colour of the column header row | Dark navy |
 | **Header text colour** | Text colour of the column header row | Light blue-grey |
 | **Alternating rows** | Toggle zebra striping on/off | On |
-| **Alt row colour** | Background colour of alternating rows | Light grey |
+| **Alt row colour** | Background colour of alternating (even) rows | Light grey |
 
 ### Group header
 
-These settings control the appearance of the group separator rows inserted when a *Group key column* is set.
+Controls the appearance of the group separator rows inserted when a *Group key column* is set.
 
 | Setting | Description | Default |
 |---------|-------------|---------|
 | **Background colour** | Fill colour of the group header row | Light grey |
 | **Text colour** | Label text colour | Mid grey |
-| **Font size** | Label font size | `8px` |
+| **Font size** | Label font size | `8` |
 | **Label style** | `UPPERCASE` / `Title Case` / `As-is` | `UPPERCASE` |
 
 ---
@@ -212,7 +225,7 @@ npm install
 npm run dev:mock
 ```
 
-Opens `http://localhost:5173/mock.html` with the sample portfolio data wired in. Mock data lives in [`src/mock/data.js`](src/mock/data.js) — edit it to test different configurations without needing a Sigma workbook.
+Opens `http://localhost:5173/mock.html` with sample portfolio data wired in. Mock data lives in [`src/mock/data.js`](src/mock/data.js) — edit it to test different column configurations and formats without needing a Sigma workbook.
 
 ### Run against Sigma
 
@@ -228,7 +241,7 @@ Register `http://localhost:5173` as a custom plugin URL in your Sigma workbook.
 npm run build
 ```
 
-Output goes to `dist/`. Host the contents of `dist/` on any static file server (S3, Netlify, GitHub Pages, etc.) and register the URL in Sigma as a custom plugin.
+Output goes to `dist/`. Host the contents on any static file server (S3, Netlify, GitHub Pages, etc.) and register the URL as a custom plugin in Sigma.
 
 ---
 
