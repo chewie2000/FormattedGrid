@@ -215,13 +215,18 @@ export default function App() {
   const footnoteData = useElementData(footnoteSourceId);
 
   // Auto-register all footnoteConfig columns so Sigma pushes their data through
-  // useElementData. We compare against config.fnColumns (what Sigma already has)
-  // so setKey is skipped entirely if the columns are already registered — no
-  // unnecessary re-render and no flicker on subsequent loads.
+  // useElementData. Two guards combined:
+  //   1. Config comparison — skips setKey when Sigma already has the columns
+  //      registered (normal interactive use, avoids flicker on reload).
+  //   2. useRef session flag — prevents repeated setKey calls when config.fnColumns
+  //      never updates between renders (Sigma PDF export / headless contexts),
+  //      which would otherwise loop until the export times out.
   const fnColsTarget  = Object.keys(footnoteCols ?? {}).sort().join(',');
   const fnColsCurrent = [...(Array.isArray(config?.fnColumns) ? config.fnColumns : [])].sort().join(',');
+  const fnSetCalledRef = useRef(false);
   useEffect(() => {
-    if (!fnColsTarget || fnColsTarget === fnColsCurrent) return;
+    if (!fnColsTarget || fnColsTarget === fnColsCurrent || fnSetCalledRef.current) return;
+    fnSetCalledRef.current = true;
     plugin.config.setKey('fnColumns', fnColsTarget.split(','));
   }, [fnColsTarget, fnColsCurrent]);
 
