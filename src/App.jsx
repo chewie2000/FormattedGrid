@@ -42,6 +42,8 @@ const EDITOR_FIELDS = [
   { name: 'groupColor',      type: 'color',    label: 'Text colour' },
   { name: 'groupFontSize',   type: 'dropdown', label: 'Font size',    values: ['7', '8', '9', '10', '11', '12', '13', '14', '16', '18', '20', '24'], defaultValue: '8' },
   { name: 'groupLabelStyle', type: 'dropdown', label: 'Label style',  values: ['UPPERCASE', 'Title Case', 'As-is'], defaultValue: 'UPPERCASE' },
+
+  { name: 'grpVersion', type: 'group', label: `v${__APP_VERSION__} (${__GIT_HASH__})` },
 ];
 
 // ── Styles ────────────────────────────────────────────────────────────────────
@@ -83,7 +85,6 @@ const S = {
   moreBtn:  { background: 'none', border: 'none', color: '#3a70c0', cursor: 'pointer', fontSize: '10px', padding: '0 2px', textDecoration: 'underline' },
   fnRow:    { cursor: 'pointer' },
   empty:    { padding: '32px 16px', color: '#999', fontSize: '13px', textAlign: 'center', background: '#f2f3f7' },
-  version:  { padding: '2px 10px 4px', fontSize: '8px', color: '#c0c0d0', textAlign: 'right', background: '#f2f3f7', userSelect: 'none' },
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -557,8 +558,6 @@ export default function App() {
           ))}
         </div>
       )}
-
-      <div style={S.version}>v{__APP_VERSION__} ({__GIT_HASH__})</div>
 
     </div>
   );
