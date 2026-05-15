@@ -239,9 +239,27 @@ export default function App() {
   const toggleCell = key =>
     setExpanded(prev => { const s = new Set(prev); s.has(key) ? s.delete(key) : s.add(key); return s; });
 
-  // ── Column widths: session-only drag overrides ────────────────────────────────
-  // Not persisted — localStorage is unavailable in Sigma's export screenshotter.
+  // ── Column widths: persisted via plugin config ────────────────────────────────
+  // localStorage is unavailable in Sigma's export screenshotter, so widths are
+  // stored in the workbook via plugin.config.setKey. We gate setLoadingState(false)
+  // on colWidthsLoaded so the screenshotter waits for saved widths to be applied.
   const [colWidths, setColWidths] = useState({});
+  const [colWidthsLoaded, setColWidthsLoaded] = useState(false);
+  const colWidthsRef   = useRef({});
+  const widthsSyncedRef = useRef(false);
+
+  // Keep ref in sync so event handlers (closures) always see the latest widths
+  useEffect(() => { colWidthsRef.current = colWidths; }, [colWidths]);
+
+  // Load saved widths from plugin config once (fires when config first arrives)
+  useEffect(() => {
+    if (!config || widthsSyncedRef.current) return;
+    widthsSyncedRef.current = true;
+    if (config.colWidths && typeof config.colWidths === 'object') {
+      setColWidths(config.colWidths);
+    }
+    setColWidthsLoaded(true);
+  }, [config]);
 
   // ── Column list: columns added to the multi-select, excluding the group key ──
   // useElementData only contains data for registered column fields (dataColumns +
@@ -257,8 +275,8 @@ export default function App() {
   // captures the correct values.
   useEffect(() => {
     if (!tableSourceId) { setLoadingState(false); return; }
-    if (rowCount > 0 && displayColIds.length > 0) setLoadingState(false);
-  }, [tableSourceId, rowCount, displayColIds.length]);
+    if (rowCount > 0 && displayColIds.length > 0 && colWidthsLoaded) setLoadingState(false);
+  }, [tableSourceId, rowCount, displayColIds.length, colWidthsLoaded]);
 
   // ── Parse footnote source ─────────────────────────────────────────────────────
   const fnColNameId = colIdByName(footnoteCols, 'column_name');
@@ -368,14 +386,17 @@ export default function App() {
     const th = e.currentTarget.closest('th');
     const startX     = e.clientX;
     const startWidth = th.offsetWidth;
+    let finalWidth   = startWidth;
 
     const onMove = (moveE) => {
       const w = Math.max(40, startWidth + (moveE.clientX - startX));
+      finalWidth = w;
       setColWidths(prev => ({ ...prev, [colId]: w }));
     };
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
+      plugin.config.setKey('colWidths', { ...colWidthsRef.current, [colId]: finalWidth });
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
