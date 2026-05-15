@@ -83,6 +83,7 @@ const S = {
   moreBtn:  { background: 'none', border: 'none', color: '#3a70c0', cursor: 'pointer', fontSize: '10px', padding: '0 2px', textDecoration: 'underline' },
   fnRow:    { cursor: 'pointer' },
   empty:    { padding: '32px 16px', color: '#999', fontSize: '13px', textAlign: 'center', background: '#f2f3f7' },
+  version:  { padding: '2px 10px 4px', fontSize: '8px', color: '#c0c0d0', textAlign: 'right', background: '#f2f3f7', userSelect: 'none' },
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -556,6 +557,8 @@ export default function App() {
           ))}
         </div>
       )}
+
+      <div style={S.version}>v{__APP_VERSION__} ({__GIT_HASH__})</div>
 
     </div>
   );
