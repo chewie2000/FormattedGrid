@@ -4,6 +4,7 @@ import {
   useEditorPanelConfig,
   useElementData,
   useElementColumns,
+  useLoadingState,
   usePlugin,
 } from '@sigmacomputing/plugin';
 
@@ -208,6 +209,7 @@ export default function App() {
   const dynGroupSize   = `${config?.groupFontSize  || '8'}px`;
   const dynGroupTransform = { UPPERCASE: 'uppercase', 'Title Case': 'capitalize', 'As-is': 'none' }[config?.groupLabelStyle] ?? 'uppercase';
 
+  const [, setLoadingState] = useLoadingState(true);
   const plugin       = usePlugin();
   const tableCols    = useElementColumns(tableSourceId);
   const tableData    = useElementData(tableSourceId);
@@ -235,27 +237,9 @@ export default function App() {
   const toggleCell = key =>
     setExpanded(prev => { const s = new Set(prev); s.has(key) ? s.delete(key) : s.add(key); return s; });
 
-  // ── Column widths: persisted drag overrides ───────────────────────────────────
-  // Key: `fg-widths-${tableSourceId}` in localStorage.
-  // Shape: { [colId]: number (px) }
+  // ── Column widths: session-only drag overrides ────────────────────────────────
+  // Not persisted — localStorage is unavailable in Sigma's export screenshotter.
   const [colWidths, setColWidths] = useState({});
-  const loadedForRef = useRef(null);
-
-  useEffect(() => {
-    if (!tableSourceId || loadedForRef.current === tableSourceId) return;
-    loadedForRef.current = tableSourceId;
-    try {
-      const stored = localStorage.getItem(`fg-widths-${tableSourceId}`);
-      if (stored) setColWidths(JSON.parse(stored));
-    } catch {}
-  }, [tableSourceId]);
-
-  useEffect(() => {
-    if (!tableSourceId || !Object.keys(colWidths).length) return;
-    try {
-      localStorage.setItem(`fg-widths-${tableSourceId}`, JSON.stringify(colWidths));
-    } catch {}
-  }, [colWidths, tableSourceId]);
 
   // ── Column list: columns added to the multi-select, excluding the group key ──
   // useElementData only contains data for registered column fields (dataColumns +
@@ -265,6 +249,14 @@ export default function App() {
   // Row count from the group-key or row-key column, which are always in tableData.
   const anchorColId   = groupKeyColId ?? allColIds[0];
   const rowCount      = tableData?.[anchorColId]?.length ?? 0;
+
+  // ── Loading state — signals the Sigma screenshotter that rendering is complete ──
+  // Must sit after rowCount / displayColIds are derived so the dependency array
+  // captures the correct values.
+  useEffect(() => {
+    if (!tableSourceId) { setLoadingState(false); return; }
+    if (rowCount > 0 && displayColIds.length > 0) setLoadingState(false);
+  }, [tableSourceId, rowCount, displayColIds.length]);
 
   // ── Parse footnote source ─────────────────────────────────────────────────────
   const fnColNameId = colIdByName(footnoteCols, 'column_name');

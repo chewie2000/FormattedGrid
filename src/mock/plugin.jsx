@@ -14,6 +14,10 @@ export function SigmaClientProvider({ children, mockState }) {
 
 export function useEditorPanelConfig() {}
 
+export function useLoadingState(initial) {
+  return [initial, () => {}];
+}
+
 export function usePlugin() {
   return { config: { setKey() {} } };
 }
