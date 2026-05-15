@@ -381,21 +381,30 @@ export default function App() {
   };
 
   // ── Resize handler ────────────────────────────────────────────────────────────
+  // DOM is mutated directly during the drag to avoid React re-renders on every
+  // mousemove (which caused a visible jerk). React state is committed once on mouseup.
   const startResize = (e, colId) => {
     e.preventDefault();
-    const th = e.currentTarget.closest('th');
+    const th         = e.currentTarget.closest('th');
+    const table      = th.closest('table');
     const startX     = e.clientX;
     const startWidth = th.offsetWidth;
+    const tableStartWidth = table?.offsetWidth ?? 0;
     let finalWidth   = startWidth;
+
+    const colIndex = displayColIds.indexOf(colId);
+    const col      = table?.querySelectorAll('colgroup col')[colIndex];
 
     const onMove = (moveE) => {
       const w = Math.max(40, startWidth + (moveE.clientX - startX));
       finalWidth = w;
-      setColWidths(prev => ({ ...prev, [colId]: w }));
+      if (col)   col.style.width   = `${w}px`;
+      if (table) table.style.width = `${tableStartWidth - startWidth + w}px`;
     };
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
+      setColWidths(prev => ({ ...prev, [colId]: finalWidth }));
       plugin.config.setKey('colWidths', { ...colWidthsRef.current, [colId]: finalWidth });
     };
     document.addEventListener('mousemove', onMove);
