@@ -373,8 +373,14 @@ export default function App() {
   Object.values(headerFn).forEach(a => a.sort((x, y) => x - y));
   Object.values(cellFn).forEach(a => a.sort((x, y) => x - y));
 
-  // Effective width for a column: drag override > Source 2 width > text-length heuristic
+  // Tracks the column being dragged and its live width so effectiveWidth returns
+  // the correct value if React re-renders mid-drag (e.g. from a config update),
+  // keeping the virtual DOM in sync with the direct DOM mutations in onMove.
+  const dragStateRef = useRef(null);
+
+  // Effective width for a column: active drag > persisted override > config width > heuristic
   const effectiveWidth = (colId) => {
+    if (dragStateRef.current?.colId === colId) return dragStateRef.current.currentWidth;
     if (colWidths[colId]) return colWidths[colId];
     const name = tableCols?.[colId]?.name ?? colId;
     if (widthMap[name]) return widthMap[name];
@@ -399,10 +405,12 @@ export default function App() {
     const onMove = (moveE) => {
       const w = Math.max(40, startWidth + (moveE.clientX - startX));
       finalWidth = w;
+      dragStateRef.current = { colId, currentWidth: w };
       if (col)   col.style.width   = `${w}px`;
       if (table) table.style.width = `${tableStartWidth - startWidth + w}px`;
     };
     const onUp = () => {
+      dragStateRef.current = null;
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
       setColWidths(prev => ({ ...prev, [colId]: finalWidth }));
