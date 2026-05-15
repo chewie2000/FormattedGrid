@@ -246,16 +246,21 @@ export default function App() {
   // on colWidthsLoaded so the screenshotter waits for saved widths to be applied.
   const [colWidths, setColWidths] = useState({});
   const [colWidthsLoaded, setColWidthsLoaded] = useState(false);
-  const colWidthsRef   = useRef({});
+  const colWidthsRef    = useRef({});
   const widthsSyncedRef = useRef(false);
+  const userResizedRef  = useRef(false);
 
-  // Keep ref in sync so event handlers (closures) always see the latest widths.
-  // Also clears dragStateRef after the new colWidths state has been committed —
-  // clearing it in onUp directly caused a one-frame snap-back because dragStateRef
-  // was nulled before React re-rendered with the updated colWidths.
+  // Keep ref in sync, clear dragState, and persist to workbook config.
+  // plugin.config.setKey is called here (after React has committed and painted)
+  // rather than in onUp — calling it there fired a Sigma SDK config update
+  // mid-render-cycle, causing the whole table to briefly snap to its pre-drag
+  // width before settling ("shrink and refit" on mouse release).
   useEffect(() => {
     colWidthsRef.current = colWidths;
     dragStateRef.current = null;
+    if (userResizedRef.current) {
+      plugin.config.setKey('colWidths', colWidths);
+    }
   }, [colWidths]);
 
   // Load saved widths from plugin config once (fires when config first arrives)
@@ -418,8 +423,8 @@ export default function App() {
     const onUp = () => {
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
+      userResizedRef.current = true;
       setColWidths(prev => ({ ...prev, [colId]: finalWidth }));
-      plugin.config.setKey('colWidths', { ...colWidthsRef.current, [colId]: finalWidth });
     };
     document.addEventListener('mousemove', onMove);
     document.addEventListener('mouseup', onUp);
