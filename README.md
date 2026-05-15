@@ -235,14 +235,6 @@ Controls the appearance of the group separator rows inserted when a *Group key c
 | [Register a Sigma Plugin Dev Playground](https://help.sigmacomputing.com/sigma-computing/docs/register-a-sigma-plugin-dev-playground) | How to register a localhost URL during development |
 | [Use your organisation's plugins](https://help.sigmacomputing.com/sigma-computing/docs/use-your-organizations-plugins) | Adding a plugin element to a workbook and connecting data sources |
 
-### Exports
-| Resource | Description |
-|----------|-------------|
-| [Send or schedule workbook exports](https://help.sigmacomputing.com/sigma-computing/docs/send-or-schedule-workbook-exports) | How to export workbooks to PDF and PNG |
-| [Configure additional options for exports](https://help.sigmacomputing.com/sigma-computing/docs/configure-additional-options-for-exports) | Export layout and formatting options |
-
-> **Export note**: Sigma generates PDF and PNG exports using a headless Chrome screenshotter. The plugin URL must be publicly accessible (not localhost) and the plugin must call `setLoadingState(false)` when rendering is complete — this is the signal the screenshotter waits on before capturing the page.
-
 ---
 
 ## Development
