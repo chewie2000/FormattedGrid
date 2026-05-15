@@ -43,7 +43,7 @@ const EDITOR_FIELDS = [
   { name: 'groupFontSize',   type: 'dropdown', label: 'Font size',    values: ['7', '8', '9', '10', '11', '12', '13', '14', '16', '18', '20', '24'], defaultValue: '8' },
   { name: 'groupLabelStyle', type: 'dropdown', label: 'Label style',  values: ['UPPERCASE', 'Title Case', 'As-is'], defaultValue: 'UPPERCASE' },
 
-  { name: 'grpVersion', type: 'group', label: `v${__APP_VERSION__} (${__GIT_HASH__})` },
+  { name: 'grpVersion', type: 'group', label: `v${__APP_VERSION__} (${__GIT_HASH__}) — github.com/chewie2000/FormattedGrid` },
 ];
 
 // ── Styles ────────────────────────────────────────────────────────────────────
