@@ -249,8 +249,14 @@ export default function App() {
   const colWidthsRef   = useRef({});
   const widthsSyncedRef = useRef(false);
 
-  // Keep ref in sync so event handlers (closures) always see the latest widths
-  useEffect(() => { colWidthsRef.current = colWidths; }, [colWidths]);
+  // Keep ref in sync so event handlers (closures) always see the latest widths.
+  // Also clears dragStateRef after the new colWidths state has been committed —
+  // clearing it in onUp directly caused a one-frame snap-back because dragStateRef
+  // was nulled before React re-rendered with the updated colWidths.
+  useEffect(() => {
+    colWidthsRef.current = colWidths;
+    dragStateRef.current = null;
+  }, [colWidths]);
 
   // Load saved widths from plugin config once (fires when config first arrives)
   useEffect(() => {
@@ -410,7 +416,6 @@ export default function App() {
       if (table) table.style.width = `${tableStartWidth - startWidth + w}px`;
     };
     const onUp = () => {
-      dragStateRef.current = null;
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
       setColWidths(prev => ({ ...prev, [colId]: finalWidth }));
