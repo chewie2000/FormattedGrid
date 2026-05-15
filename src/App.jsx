@@ -426,6 +426,8 @@ export default function App() {
 
   return (
     <div style={{ ...S.wrap, fontFamily: `${fontFamily},${FONT}` }}>
+      {/* Force background colours and images to render in PDF/print contexts */}
+      <style>{`* { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }`}</style>
       <table style={{ ...S.table, width: `${totalWidth}px` }}>
         <colgroup>
           {displayColIds.map(colId => (
